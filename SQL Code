@@ -1,0 +1,197 @@
+create database video_games;
+use video_games;
+
+CREATE TABLE IF NOT EXISTS Player (
+  signupDate VARCHAR(255) NOT NULL,
+  userName VARCHAR(255) NOT NULL,
+  pass VARCHAR(255) NOT NULL,
+  cCardInfo VARCHAR(255) NULL,
+  fName VARCHAR(255) NOT NULL,
+  lName VARCHAR(255) NULL,
+  admin TINYINT(1) NOT NULL,
+  PRIMARY KEY (userName),
+  UNIQUE INDEX userName_UNIQUE (userName ASC),
+  UNIQUE INDEX cCardInfo_UNIQUE (cCardInfo ASC));
+
+CREATE TABLE IF NOT EXISTS DLC (
+  idDLC INT NOT NULL AUTO_INCREMENT,
+  releaseDate VARCHAR(45) NOT NULL,
+  DLCName VARCHAR(45) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (idDLC),
+  UNIQUE INDEX idDLC_UNIQUE (idDLC ASC));
+
+CREATE TABLE IF NOT EXISTS Payment (
+  idPay INT NOT NULL AUTO_INCREMENT,
+  userName_fk VARCHAR(255) NOT NULL,
+  purchaseDat VARCHAR(255) NOT NULL,
+  idDLC_fk INT NOT NULL,
+  PRIMARY KEY (idPay),
+  INDEX (userName_fk),
+  INDEX (idDLC_fk),
+  UNIQUE INDEX idPay_UNIQUE (idPay ASC),
+  
+  CONSTRAINT fk_Player
+    FOREIGN KEY uName (userName_fk) REFERENCES Player (userName)
+    ON DELETE NO ACTION ON UPDATE NO ACTION,
+    
+  CONSTRAINT fk_DLC
+    FOREIGN KEY DLCid (idDLC_fk) REFERENCES DLC (idDLC)
+    ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS `OfflineGame` (
+  idLevel INT NOT NULL,
+  SavedDate VARCHAR(45) NOT NULL,
+  userName_OLfk VARCHAR(255) NOT NULL,
+  unlocked VARCHAR(255) NULL,
+  items VARCHAR(255) NULL,
+  PRIMARY KEY (idLevel),
+  UNIQUE INDEX (idLevel ASC),
+  UNIQUE INDEX (userName_OLfk ASC),
+  
+  CONSTRAINT fk_OFPlayer
+    FOREIGN KEY uNameOL (userName_OLfk) REFERENCES Player (userName)
+    ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS Lobby (
+  idLobby INT NOT NULL,
+  idPlayer INT NOT NULL AUTO_INCREMENT,
+  timer TIME NULL,
+  userName_Lfk VARCHAR(255) NOT NULL,
+  PRIMARY KEY (idLobby),
+  UNIQUE KEY (idPlayer),
+  INDEX (idLobby ASC),
+  INDEX (userName_Lfk ASC),
+  
+  CONSTRAINT fk_LobbyPlayer
+    FOREIGN KEY lobUserName (userName_Lfk) REFERENCES Player (userName)
+    ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS `OnlineGameTeams` (
+  idOnlineGame INT NOT NULL,
+  idLobby_fk INT NOT NULL,
+  teams INT NOT NULL,
+  userName_ONfk VARCHAR(45) NOT NULL,
+  PRIMARY KEY (idOnlineGame),
+  INDEX (idLobby_fk ASC),
+  UNIQUE INDEX (userName_ONfk ASC),
+  
+  CONSTRAINT fk_Lobby
+    FOREIGN KEY lobbyID (idLobby_fk) REFERENCES Lobby (idLobby)
+    ON DELETE NO ACTION ON UPDATE NO ACTION,
+    
+  CONSTRAINT fk_TeamPlayer
+    FOREIGN KEY teamUser (userName_ONfk) REFERENCES Player (userName)
+    ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+CREATE TABLE IF NOT EXISTS `OnlineGameOpen` (
+  idOnlineGameOpen INT NOT NULL,
+  idLobby_Openfk INT NOT NULL,
+  userName_Openfk VARCHAR(45) NOT NULL,
+  PRIMARY KEY (idOnlineGameOpen),
+  INDEX (idLobby_Openfk ASC),
+  UNIQUE INDEX (userName_Openfk ASC),
+
+  CONSTRAINT fk_LobbyOpen
+    FOREIGN KEY lobbyIDOpen (idLobby_Openfk) REFERENCES Lobby (idLobby)
+    ON DELETE NO ACTION ON UPDATE NO ACTION,
+    
+  CONSTRAINT fk_PlayerOpen
+    FOREIGN KEY teamUserOpen (userName_Openfk) REFERENCES Player (userName)
+    ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+LOAD DATA LOCAL INFILE 'C:\\ProgramData\\MySQL\\MySQL Server 5.7\\Uploads\\Players.csv'
+ INTO TABLE video_games.Player FIELDS TERMINATED BY ',';
+ 
+ LOAD DATA LOCAL INFILE 'C:\\ProgramData\\MySQL\\MySQL Server 5.7\\Uploads\\DLC.csv'
+ INTO TABLE video_games.DLC FIELDS TERMINATED BY ',' (releaseDate, DLCName, price);
+
+INSERT INTO payment(purchaseDat,idDLC_fk,userName_fk) VALUES ('1/15/2007',1,'onlinesecure'), ('3/22/2007',1,'waterpolodoves'), ('4/14/2007',1,'warblinggnostic'), ('5/20/2007',1,'syllablephoenix'), ('6/17/2007',1,'pricklechoke'), 
+('7/9/2007',1,'marblescratchy'), ('7/23/2007',1,'bicepscounselor'), ('8/11/2007',1,'terminallyandes'), ('11/12/2007',1,'asteroidgodwit'),
+ ('1/15/2008',1,'reacttufted'), ('4/20/2008',1,'cinnamoncaramelised'), ('5/21/2008',1,'nodelistbatch'), ('6/23/2008',1,'annoyingcasting'), 
+ ('7/8/2008',1,'meatscharts'), ('8/2/2008',1,'classroomcolt'), ('12/20/2008',1,'turnovercrunchy'), ('3/17/2009',2,'officebuyer'), 
+ ('3/29/2009',2,'annoyingcasting'), ('4/9/2009',2,'countergregarious'), ('4/9/2009',2,'cenozoictibia'), ('4/21/2009',1,'meatscharts'),
+ ('5/10/2009',2,'separatelyduct'), ('7/14/2009',1,'distancedisrupt'), ('8/11/2009',2,'naturelidar'), ('8/13/2009',2,'raviolibit'), 
+ ('9/7/2009',1,'classroomcolt'), ('12/14/2009',2,'fractioncrown'), ('3/3/2010',1,'golfkitchen'), ('5/1/2010',1,'bmwmetacarpus'),
+ ('7/26/2010',1,'magellanfunding'), ('10/5/2010',1,'pimentomidhinge'), ('10/9/2010',1,'onlinesecure'), ('11/16/2010',1,'waterpolodoves'), 
+ ('12/17/2010',1,'warblinggnostic'), ('1/5/2011',3,'syllablephoenix'), ('2/20/2011',3,'pricklechoke'), ('4/4/2011',2,'marblescratchy'),
+ ('4/7/2011',2,'bicepscounselor'), ('5/14/2011',1,'terminallyandes'), ('6/11/2011',2,'raviolibit'), ('7/26/2011',3,'onlinesecure'), 
+ ('7/30/2011',1,'waterpolodoves'), ('8/2/2011',3,'warblinggnostic'), ('9/12/2011',1,'syllablephoenix'), ('9/29/2011',3,'pricklechoke'),
+ ('11/26/2011',2,'marblescratchy'), ('12/8/2011',1,'bicepscounselor'), ('4/3/2012',3,'terminallyandes'), ('4/9/2012',1,'asteroidgodwit'),
+ ('4/18/2012',2,'reacttufted'), ('6/18/2012',2,'cinnamoncaramelised'), ('7/19/2012',1,'nodelistbatch'), ('8/3/2012',2,'annoyingcasting'), 
+ ('8/14/2012',3,'meatscharts'), ('8/16/2012',2,'classroomcolt'), ('9/1/2012',2,'turnovercrunchy'), ('9/30/2012',4,'officebuyer'), 
+ ('11/8/2012',3,'annoyingcasting'), ('11/27/2012',4,'countergregarious'), ('12/29/2012',2,'cenozoictibia'), ('1/11/2013',3,'meatscharts'),
+ ('4/11/2013',3,'separatelyduct'), ('5/24/2013',1,'distancedisrupt'), ('5/29/2013',3,'naturelidar'), ('12/1/2013',2,'raviolibit'), 
+ ('12/2/2013',1,'classroomcolt'), ('12/18/2013',3,'fractioncrown'), ('1/10/2014',2,'golfkitchen'), ('4/22/2014',1,'bmwmetacarpus'), 
+ ('5/30/2014',2,'magellanfunding'), ('12/3/2014',4,'pimentomidhinge'), ('12/10/2014',5,'onlinesecure'), ('12/13/2014',3,'waterpolodoves'), 
+ ('12/23/2014',3,'warblinggnostic'), ('1/13/2015',1,'syllablephoenix'), ('1/26/2015',2,'pricklechoke'), ('2/3/2015',3,'marblescratchy'), 
+ ('2/11/2015',2,'bicepscounselor'), ('3/19/2015',1,'terminallyandes'), ('5/10/2015',5,'raviolibit'), ('5/23/2015',1,'onlinesecure'), 
+ ('7/15/2015',4,'waterpolodoves'), ('9/7/2015',3,'warblinggnostic'), ('9/17/2015',1,'syllablephoenix'), ('9/23/2015',1,'pricklechoke'), 
+ ('9/24/2015',2,'marblescratchy'), ('10/31/2015',4,'bicepscounselor'), ('11/14/2015',4,'terminallyandes'), ('12/18/2015',4,'asteroidgodwit'), 
+ ('1/10/2016',5,'reacttufted'), ('1/17/2016',4,'cinnamoncaramelised'), ('2/2/2016',2,'nodelistbatch'), ('3/17/2016',6,'annoyingcasting'), 
+ ('4/7/2016',5,'meatscharts'), ('6/19/2016',1,'classroomcolt'), ('6/21/2016',6,'turnovercrunchy'), ('8/27/2016',2,'officebuyer'), 
+ ('10/30/2016',4,'annoyingcasting'), ('11/29/2016',3,'countergregarious'), ('12/26/2016',6,'cenozoictibia');
+
+delimiter //
+CREATE PROCEDURE `DLC Count`()
+BEGIN
+SELECT DLCName as 'DLC Name',  count(idDLC) as Total 
+	FROM DLC
+		LEFT JOIN Payment
+			ON idDLC_fk = idDLC
+GROUP BY idDLC;
+END //
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE `DLC Total`()
+BEGIN
+SELECT DLCName as 'DLC Name',  sum(price) as Total 
+	FROM DLC
+		LEFT JOIN Payment
+			ON idDLC_fk = idDLC 
+GROUP BY idDLC;
+END //
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE `LevelUP`()
+BEGIN
+SELECT * FROM OfflineGame WHERE idLevel = idLevel + 1;
+END //
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE `LogInAccount`(IN user VARCHAR(255), IN passwrd VARCHAR(255))
+BEGIN
+SELECT userName, pass, admin FROM player 
+	WHERE 
+    userName LIKE user
+		AND
+    pass LIKE passwrd;
+END //
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE `New Lobby`()
+BEGIN
+SELECT * FROM Lobby WHERE idLobby = idLobby + 1 AND idPlayer = 1;
+ALTER TABLE Lobby AUTO_INCREMENT = 1;
+END //
+delimiter ;
+
+delimiter //
+CREATE PROCEDURE `UserTotal`()
+BEGIN
+SELECT userName_fk as User, sum(price) as Total 
+	FROM DLC
+		LEFT JOIN Payment
+			ON idDLC_fk = idDLC 
+GROUP BY userName_fk;
+END //
+delimiter ;
