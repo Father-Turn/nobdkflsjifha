@@ -1,0 +1,582 @@
+#include <winsock.h>
+#include <mysql.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <iostream>
+#include <ctime>
+#include <cppconn\prepared_statement.h>
+
+using namespace std;
+
+void adminMainMenu();
+void adminPowers(MYSQL*, MYSQL_RES*, MYSQL_ROW, string&, int&, int&);
+void regularPowers(MYSQL*, MYSQL_RES*, MYSQL_ROW, string&, int&, int&);
+void insertSQL(string&, string&, string&, string[], int&, struct tm *, const char*&);
+
+int main() {
+	MYSQL *conn;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+
+	char *server = "localhost";
+	char *user = "root";
+	char *password = "C13v3L4nd_x"; /* set me first */
+	char *database = "video_games";
+	conn = mysql_init(NULL);
+
+	int ch = 0, n = 0, admin = 0, countLobby = 0, countPlayer = 0;
+	string line = "", text = "", values = "", uName = "", passW = "";
+	const char* newText;
+
+	time_t theTime = time(0);
+	struct tm *now = localtime(&theTime);
+
+	bool log = false, run = false, cont = false;
+		/* Connect to database */
+		if (mysql_real_connect(conn, server, user, password, database, 0, NULL, 0)) {
+			while (!log){
+				line = "", text = "";
+				cout << "1. Log in\n";
+				cout << "2. Create new Account\n";
+				cout << "-1 Exit\n";
+				
+				if (!(cin >> ch))
+				{
+					cin.clear();
+					while (cin.get() != '\n');
+					cout << "Invalid Input!\n";
+					continue;
+				}
+				else{
+					switch (ch)
+					{
+					case 1:
+						conn = mysql_init(NULL);
+						mysql_real_connect(conn, "localhost", "root", "C13v3L4nd_x", "video_games", 0, NULL, 0);
+						cout << "\nUser Name: ";
+						cin >> uName;
+
+						cout << "\nPassword: ";
+						cin >> text;
+						
+						line = "CALL LogInAccount('" + uName + "', '" + text + "');";
+						
+						newText = line.c_str();
+						mysql_query(conn, newText);
+						res = mysql_use_result(conn);
+						if ((row = mysql_fetch_row(res)) != NULL)
+						{
+							if (atoi(row[2]) == 1)
+							{
+								line = "INSERT INTO 'Offline Game' VALUES (20, '5/2/2016', '" + uName + "','Everything', 'All');";
+								
+								newText = line.c_str();
+								mysql_query(conn, newText);
+								res = mysql_use_result(conn);
+								
+								system("cls");
+								adminPowers(conn, res, row, uName, countLobby, countPlayer);
+							}
+							else if (atoi(row[2]) == 0)
+							{
+								line = "INSERT INTO 'Offline Game' VALUES (1, '5/2/2016', '" + uName + "','', '');";
+
+								newText = line.c_str();
+								mysql_query(conn, newText);
+								res = mysql_use_result(conn);
+								
+								system("cls");
+								regularPowers(conn, res, row, uName, countLobby, countPlayer);
+							}
+						}
+						break;
+					case 2:
+					{
+						text = "Player";
+						n = 6;
+						values = "(fName, lName, userName, pass, cCardInfo, admin, signupDate) VALUES ('";
+						string sr[6] = { "First name: ", "Last Name (Optional): ", "User Name: ", "Password: ", "Credit Card: ", "Are you an administrator (1 for yes, 0 for no): " };
+
+						insertSQL(line, text, values, sr, n, now, newText);
+
+						mysql_query(conn, newText);
+						res = mysql_use_result(conn);
+						break;
+					}
+					case -1:
+						log = true;
+						/* close connection */
+						mysql_free_result(res);
+						mysql_close(conn);
+						break;
+					}
+				}
+			}
+		}
+}
+
+void adminMainMenu(){
+	cout << "1. Show Table Names\n";
+	cout << "2. Shows Table Values\n";
+	cout << "3. Add Row to Table\n";
+	cout << "4. Delete Row to Table\n";
+	cout << "5. Create new Lobby\n";
+	cout << "6. Calculations\n";
+	cout << "7. Play a level\n";
+	cout << "8. Play Online\n";
+	cout << "9. Delete self from game\n";
+	cout << "10. Log Out\n";
+}
+
+void calcMenu()
+{
+	cout << "1. DLC Total ($)\n";
+	cout << "2. How many times a DLC was bought\n";
+	cout << "3. Most profitable DLC\n";
+	cout << "4. Exit\n";
+}
+
+void regularMenu()
+{
+	cout << "1. Play a level\n";
+	cout << "2. Play Online\n";
+	cout << "3. Delete self from game\n";
+	cout << "4. Log Out\n";
+}
+
+void insertSQL(string &line, string& txt, string& val, string out[], int& n, struct tm *now, const char*& newText)
+{
+	cin.ignore();
+	string in[7];
+	line = "INSERT INTO " + txt + " " + val;
+
+	for (int i = 0; i < n; i++)
+	{
+		cout << endl << out[i];
+		getline(cin, in[i]);
+	}
+
+	if (n == 6){
+		in[n] = to_string(now->tm_mon + 1) + "/" + to_string(now->tm_mday) + "/" + to_string(now->tm_year + 1900);
+		line = line + in[0] + "', '" + in[1] + "', '" + in[2] + "', '" + in[3] + "', '" + in[4] + "', " + in[5] + ", '" + in[6] + "');";
+
+		newText = line.c_str();
+	}
+	else if (n == 5){
+		in[n] = to_string(now->tm_mon + 1) + "/" + to_string(now->tm_mday) + "/" + to_string(now->tm_year + 1900);
+		line += in[0] + ", '" + in[1] + "', '" + in[2] + "', '" + in[3] + "', '" + in[4] + "', '" + in[5] + "');";
+
+		newText = line.c_str();
+	}
+	else if (n == 4){
+		line = line + in[0] + ", " + in[1] + ", " + in[2] + ", '" + in[3] + "');";
+		
+		newText = line.c_str();
+	}
+	else if (n == 3){
+		line = line + in[0] + ", " + in[1] + ", '" + in[2] + "');";
+
+		newText = line.c_str();
+	}
+	else if (n == 2){
+		if (txt == "dlc")
+		{
+			in[n] = to_string(now->tm_mon + 1) + "/" + to_string(now->tm_mday) + "/" + to_string(now->tm_year + 1900);
+			line = line + in[0] + "', '" + in[1] + "', '" + in[2] + "');";
+		}
+		else
+			line = line + in[0] + ", '" + in[1] + "', '" + in[2] + "');";
+
+		newText = line.c_str();
+	}
+	else if (n == 1){
+		line = line + in[0] + "');";
+
+		newText = line.c_str();
+	}
+}
+
+void regularPowers(MYSQL *conn, MYSQL_RES *res, MYSQL_ROW row, string& name, int& countLob, int& countPlay){
+	bool run = false, cont = false;
+	int ch = 0, n = 0;
+	int ran = rand() % 10 + 1;
+	int lvlUP = 2;
+
+	string line = "", text = "", values = "";
+	const char* newText;
+	
+	conn = mysql_init(NULL);
+	while (!run)
+	{
+		mysql_real_connect(conn, "localhost", "root", "C13v3L4nd_x", "video_games", 0, NULL, 0);
+		regularMenu();
+		cin >> ch;
+		switch (ch)
+		{
+		case 1:
+			ran = rand() % 10 + 1;
+			if (lvlUP == ran){
+				line = "CALL LevelUP('" + name + "');";
+
+				newText = line.c_str();
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+				system("cls");
+				cout << "Level Up!\n";
+			}
+			break;
+		case 2:
+			line = "INSERT INTO 'Lobby' VALUES (" + to_string(countLob);
+			line += ", " + to_string(countPlay) + ", NULL, '" + name + "');";
+
+			countPlay++;
+			newText = line.c_str();
+			mysql_query(conn, newText);
+			res = mysql_use_result(conn);
+			system("cls");
+			cout << "Added into Lobby!\n";
+			break;
+		case 3:
+			line = "DELETE FROM OfflineGame WHERE idLevel = '" + name + "';";
+
+			newText = line.c_str();
+
+			mysql_query(conn, newText);
+			res = mysql_use_result(conn);
+			system("cls");
+			cout << "Deleted!\n";
+			break;
+		case 4:
+			run = true;
+			break;
+		default:
+			system("cls");
+			cout << "Wrong Input!\n";
+		}
+	}
+}
+
+void adminPowers(MYSQL *conn, MYSQL_RES *res, MYSQL_ROW row, string& name, int& countLob, int& countPlay){
+	time_t theTime = time(0);
+	struct tm *now = localtime(&theTime);
+
+	bool run = false, cont = false;
+	int ch = 0, n = 0;
+	int ran = rand() % 10 + 1;
+	int lvlUP = 2;
+
+	string line = "", text = "", values = "";
+	const char* newText;
+
+	conn = mysql_init(NULL);
+	while (!run)
+	{
+		mysql_real_connect(conn, "localhost", "root", "C13v3L4nd_x", "video_games", 0, NULL, 0);
+		adminMainMenu();
+		cin >> ch;
+		switch (ch)
+		{
+		case 1:
+			/* send SQL query */
+			if (mysql_query(conn, "show tables")) {
+				fprintf(stderr, "%s\n", mysql_error(conn));
+			}
+			res = mysql_use_result(conn);
+
+			/* output table name */
+			system("cls");
+			printf("MySQL Tables in mysql database:\n");
+
+			while ((row = mysql_fetch_row(res)) != NULL)
+				printf("%s \n", row[0]);
+			break;
+		case 2:
+			system("cls");
+			line = "SELECT * FROM ";
+			cout << "Which table? ";
+			cin >> text;
+
+			line += text;
+
+			newText = line.c_str();
+
+			mysql_query(conn, newText);
+			res = mysql_use_result(conn);
+			system("cls");
+			while ((row = mysql_fetch_row(res)) != NULL)
+			{
+				printf("%s %s %s %s %s\n", row[0], row[1], row[2], row[3], row[4], row[5]);
+			}
+			break;
+		case 3:
+			cout << "Which table? ";
+			cin >> text;
+
+			if (text == "player"){
+				n = 5;
+				values = "(fName, lName, userName, pass, cCardInfo, signupDate) VALUES ('";
+				string out[5] = { "Enter your information\nFirst name: ", "Last Name (Optional): ", "\nUser Name: ", "\nPassword: ", "\nCredit Card: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "dlc"){
+				n = 2;
+				values = "(DLCName, price, releaseDate) VALUES ('";
+				string out[2] = { "Enter the information\nDLC Name: ", "Price: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "payment"){
+				n = 2;
+				values = "(idDLC_fk, userName_fk, purchaseDat) VALUES (";
+				string out[2] = { "Enter your information\nDLC ID: ", "User Name: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "offline game"){
+				n = 5;
+				values = "(idLevel, userName_OLfk, unlocked, items, SavedDate) VALUES (";
+				string out[4] = { "Enter your information\nLevel: ", "User Name: ", "Unlockables: ", "items: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "lobby"){
+				n = 1;
+				values = "(userName_Lfk) VALUES ('";
+				string out[1] = { "Enter your information\nUser Name: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "online game teams"){
+				n = 4;
+				values = " VALUES (";
+				string out[4] = { "Enter your information\nOnline ID: ", "Lobby ID): ", "Team Number: ", "User Name: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "online game open"){
+				n = 3;
+				values = " VALUES (";
+				string out[3] = { "Enter your information\nOnline ID: ", "Lobby ID): ", "User Name: " };
+
+				insertSQL(line, text, values, out, n, now, newText);
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else{
+				system("cls");
+				cout << "Wrong Input!";
+			}
+			break;
+		case 4:
+			cout << "Which table? ";
+			cin >> text;
+
+			if (text == "player"){
+				line = "DELETE FROM Player WHERE userName = '";
+				cin >> text;
+
+				line += text + "';";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "dlc"){
+				line = "DELETE FROM DLC WHERE idDLC = ";
+				cin >> text;
+
+				line += text + ";";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "payment"){
+				line = "DELETE FROM Payment WHERE idPay = ";
+				cin >> text;
+
+				line += text + ";";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "offline game"){
+				line = "DELETE FROM Offline Game WHERE idLevel = ";
+				cin >> text;
+
+				line += text + ";";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "lobby"){
+				line = "DELETE FROM Lobby WHERE idLobby = ";
+				cin >> text;
+
+				line += text + ";";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "online game teams"){
+				line = "DELETE FROM Online Game Teams WHERE idOnlineGame = ";
+				cin >> text;
+
+				line += text + ";";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else if (text == "online game open"){
+				line = "DELETE FROM Online Game Open WHERE idOnlineGameOpen = ";
+				cin >> text;
+
+				line += text + ";";
+
+				newText = line.c_str();
+
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+			}
+			else{
+				system("cls");
+				cout << "Wrong Input!";
+			}
+			break;
+		case 5:
+			line = "CALL `New Lobby`();";
+			newText = line.c_str();
+			
+			countLob++; countPlay++;
+			mysql_query(conn, newText);
+			res = mysql_use_result(conn);
+			break;
+		case 6:
+			cont = false;
+			while (!cont)
+			{
+				conn = mysql_init(NULL);
+				mysql_real_connect(conn, "localhost", "root", "C13v3L4nd_x", "video_games", 0, NULL, 0);
+				line = "", text = "";
+				calcMenu();
+				if (!(cin >> ch))
+				{
+					cin.clear();
+					while (cin.get() != '\n');
+					cout << "Invalid Input!\n";
+					continue;
+				}
+				switch (ch)
+				{
+				case 1:
+					line = "CALL UserTotal();";
+					newText = line.c_str();
+
+					mysql_query(conn, newText);
+					res = mysql_use_result(conn);
+					system("cls");
+					while ((row = mysql_fetch_row(res)) != NULL)
+					{
+						printf("%s   %s \n", row[0], row[1]);
+					}
+					break;
+				case 2:
+					line = "CALL `DLC Count`();";
+					newText = line.c_str();
+
+					mysql_query(conn, newText);
+					res = mysql_use_result(conn);
+					system("cls");
+					while ((row = mysql_fetch_row(res)) != NULL)
+					{
+						printf("%s   %s \n", row[0], row[1]);
+					}
+					break;
+				case 3:
+					line = "CALL `DLC Total`();";
+					newText = line.c_str();
+
+					mysql_query(conn, newText);
+					res = mysql_use_result(conn);
+					system("cls");
+					while ((row = mysql_fetch_row(res)) != NULL)
+					{
+						printf("%s    %s \n", row[0], row[1]);
+					}
+					break;
+				case 4:
+					cont = true;
+					break;
+				}
+			}
+			break;
+		case 7:
+			ran = rand() % 10 + 1;
+			if (lvlUP == ran){
+				line = "CALL LevelUP('" + name + "');";
+
+				newText = line.c_str();
+				mysql_query(conn, newText);
+				res = mysql_use_result(conn);
+				system("cls");
+				cout << "Level Up!\n";
+			}
+			break;
+		case 8:
+			line = "INSERT INTO 'Lobby' VALUES (" + to_string(countLob);
+			line += ", " + to_string(countPlay) + ", NULL, '" + name + "');";
+
+			countPlay++;
+			newText = line.c_str();
+			mysql_query(conn, newText);
+			res = mysql_use_result(conn);
+			system("cls");
+			cout << "Added into Lobby!\n";
+			break;
+		case 9:
+			line = "DELETE FROM OfflineGame WHERE idLevel = '" + name + "';";
+
+			newText = line.c_str();
+
+			mysql_query(conn, newText);
+			res = mysql_use_result(conn);
+			break;
+		case 10:
+			run = true;
+			break;
+		default:
+			system("cls");
+			cout << "Wrong Input!\n";
+		}
+	}
+}
